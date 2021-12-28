@@ -3,7 +3,7 @@ import zlib
 from gzip import GzipFile
 from typing import Optional
 
-from supabase.utils import to_bytes
+from django_storage_supabase.utils import to_bytes
 
 
 class GzipCompressionWrapper(io.RawIOBase):
