@@ -110,16 +110,28 @@ class SupabaseStorageTests(TestCase):
 
     def test_storage_listdir_subdir(self):
         # Files:
-        #   some/path/1.txt
+        #   some/afolder/1.txt
         #   some/2.txt
         pages = [
             {
-                "CommonPrefixes": [
-                    {"Prefix": "some/path"},
-                ],
-                "Contents": [
-                    {"Key": "some/2.txt"},
-                ],
+                "name": "afolder",
+                "id": None,
+                "updated_at": None,
+                "created_at": None,
+                "last_accessed_at": None,
+                "metadata": None,
+            },
+            {
+                "name": "cajaconpollo3.txt",
+                "id": "756dae5b-0ba3-4d50-9ade-1ea24afdf479",
+                "updated_at": "2021-08-16T14:38:35.882189+00:00",
+                "created_at": "2021-08-16T14:38:35.882189+00:00",
+                "last_accessed_at": "2021-08-16T14:38:35.882189+00:00",
+                "metadata": {
+                    "size": 15,
+                    "mimetype": "application/x-www-form-urlencoded",
+                    "cacheControl": "no-cache",
+                },
             },
         ]
 
