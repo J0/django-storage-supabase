@@ -9,8 +9,8 @@ import posixpath
 # SUPABASE_URL = "https:<your-supabase-id>"
 # SUPABASE_ROOT_PATH = '/dir/'
 import threading
-from typing import Optional
 
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
@@ -19,13 +19,26 @@ from supabase import create_client
 from django_storage_supabase.base import BaseStorage
 from django_storage_supabase.compress import CompressedFileMixin, CompressStorageMixin
 
-from .utils import clean_name, setting
+from .utils import clean_name, get_available_overwrite_name, safe_join, setting
 
 
 @deconstructible
 class SupabaseFile(CompressedFileMixin, File):
     def __init__(self):
         pass
+
+    @property
+    def size(self):
+        raise NotImplementedError("TODO")
+
+    def read(self, num_bytes=None):
+        raise NotImplementedError("TODO")
+
+    def write(self, content):
+        raise NotImplementedError("TODO")
+
+    def close(self):
+        raise NotImplementedError("TODO")
 
 
 @deconstructible
@@ -34,6 +47,17 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         self._bucket = None
         self._connections = threading.local()
         self._client = None
+
+    def _normalize_name(self, name):
+        """
+        Normalizes the name so that paths like /path/to/ignored/../something.txt
+        work. We check to make sure that the path pointed to is not outside
+        the directory specified by the LOCATION setting.
+        """
+        try:
+            return safe_join(self.location, name)
+        except ValueError:
+            raise SuspiciousOperation("Attempted access to '%s' denied." % name)
 
     def _open(self):
         raise NotImplementedError("TODO")
@@ -71,9 +95,6 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
             "SUPABSE_ACCESS_TOKEN": setting("SUPABASE_ACCESS_TOKEN"),
         }
 
-    def _get_blob(self, name):
-        pass
-
     def listdir(self, name: str):
         name = self._normalize_name(clean_name(name))
         # For bucket.list_blobs and logic below name needs to end in /
@@ -104,9 +125,17 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         name = self._normalize_name(clean_name(name))
         return bool(self._bucket.list(name))
 
-    def size(self, name: str) -> int:
+    def get_accessed_time(self, name: str):
         name = self._normalize_name(clean_name(name))
-        return int(self._bucket.list(name)[0]["metadata"]["size"])
+        accessed = self._bucket.list(name)[0]["accessed_at"]
+        return accessed if setting("USE_TZ") else timezone.make_naive(accessed)
+
+    def get_available_name(self, name, max_length=None):
+        name = clean_name(name)
+        if self.file_overwrite:
+            return get_available_overwrite_name(name, max_length)
+
+        return super().get_available_name(name, max_length)
 
     def get_created_time(self, name: str):
         name = self._normalize_name(clean_name(name))
@@ -117,9 +146,6 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         name = self._normalize_name(clean_name(name))
         updated = self._bucket.list(name)[0]["updated_at"]
         return updated if setting("USE_TZ") else timezone.make_naive(updated)
-
-    def get_available_name(self, name: str, max_length: Optional[int] = ...) -> str:
-        return super().get_available_name(name, max_length=max_length)
 
     def _clean_name(self, name: str) -> str:
         """
@@ -135,9 +161,10 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
             clean_name += "/"
         return clean_name
 
+    def size(self, name: str) -> int:
+        name = self._normalize_name(clean_name(name))
+        return int(self._bucket.list(name)[0]["metadata"]["size"])
+
     def url(self, name: str) -> str:
         name = self._normalize_name(clean_name(name))
         return self._bucket.get_public_url(name)
-
-    def get_available_name(self, name: str, max_length=None):
-        raise NotImplementedError("TODO")
