@@ -12,6 +12,7 @@ import threading
 from typing import Optional
 
 from django.core.files.base import File
+from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from supabase import create_client
 
@@ -35,10 +36,10 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         self._client = None
 
     def _open(self):
-        pass
+        raise NotImplementedError("TODO")
 
     def _save(self, name, content):
-        pass
+        raise NotImplementedError("TODO")
 
     @property
     def client(self):
@@ -46,7 +47,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
             settings = self.get_default_setting()
 
             self._client = create_client(
-                setting["SUPABASE_URL"], setting["SUPABASE_ACCESS_TOKEN"]
+                settings["SUPABASE_URL"], settings["SUPABASE_ACCESS_TOKEN"]
             )
         return self._client
 
@@ -57,13 +58,10 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         create it.
         """
         if self._bucket is None:
-            # TODO: Fetch bucket
-            self._bucket = None
             self.client.StorageFileAPI(self.bucket_name)
         return self._bucket
 
     def get_valid_name(self):
-
         pass
 
     def get_default_settings(self):
@@ -74,7 +72,6 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         }
 
     def _get_blob(self, name):
-        # Wrap google.cloud.storage's blob to raise if the file doesn't exist
         pass
 
     def listdir(self, name: str):
@@ -84,7 +81,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         if name and not name.endswith("/"):
             name += "/"
 
-        directory_contents = self.bucket.list(path=name)
+        directory_contents = self._bucket.list(path=name)
 
         files = []
         dirs = []
@@ -99,21 +96,27 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
     def delete(self, name: str):
         name = self._normalize_name(clean_name(name))
         try:
-            self.bucket.remove(name)
+            self._bucket.remove(name)
         except Exception as e:
             pass
 
     def exists(self, name: str):
         name = self._normalize_name(clean_name(name))
-        return bool(self.bucket.get_blob(name))
+        return bool(self._bucket.list(name))
 
     def size(self, name: str) -> int:
         name = self._normalize_name(clean_name(name))
         return int(self._bucket.list(name)[0]["metadata"]["size"])
 
+    def get_created_time(self, name: str):
+        name = self._normalize_name(clean_name(name))
+        created = self._bucket.list(name)[0]["created_at"]
+        return created if setting("USE_TZ") else timezone.make_naive(created)
+
     def get_modified_time(self, name: str):
         name = self._normalize_name(clean_name(name))
-        return self._bucket.list(name)[0]["updated_at"]
+        updated = self._bucket.list(name)[0]["updated_at"]
+        return updated if setting("USE_TZ") else timezone.make_naive(updated)
 
     def get_available_name(self, name: str, max_length: Optional[int] = ...) -> str:
         return super().get_available_name(name, max_length=max_length)
@@ -131,3 +134,10 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
             # Add a trailing slash as it was stripped.
             clean_name += "/"
         return clean_name
+
+    def url(self, name: str) -> str:
+        name = self._normalize_name(clean_name(name))
+        return self._bucket.get_public_url(name)
+
+    def get_available_name(self, name: str, max_length=None):
+        raise NotImplementedError("TODO")
