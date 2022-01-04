@@ -19,3 +19,8 @@ and then write a blogpost/tutorial about it. We will write a description as well
 1. `pip3 install django-storages-supabase	`
 
 2. Fill up settings accordingly
+
+
+## TODOs:
+- Implement save
+- Implement open and write

@@ -40,8 +40,8 @@ class SupabaseFile(CompressedFileMixin, File):
         [description]
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, name):
+        self.name = name
 
     @property
     def size(self):
@@ -136,7 +136,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
             else:
                 dirs.append(entry["name"])
 
-        return files, dirs
+        return dirs, files
 
     def delete(self, name: str):
         name = self._normalize_name(clean_name(name))
