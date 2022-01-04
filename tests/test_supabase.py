@@ -12,7 +12,9 @@ from django_storage_supabase import supabase
 class SupabaseStorageTests(TestCase):
     def setUp(self):
         self.storage = supabase.SupabaseStorage()
-        self.storage._connections.connection = mock.MagicMock()
+        self.storage._bucket = mock.MagicMock()
+        self.storage._client = mock.MagicMock()
+        self.storage.bucket_name = "test_bucket"
 
     def test_clean_name(self):
         """
@@ -105,16 +107,15 @@ class SupabaseStorageTests(TestCase):
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
-        self.storage.bucket.Object.assert_called_with("path/to/file.txt")
-        self.storage.bucket.Object.return_value.delete.assert_called_with()
+        self.storage.bucket.remove.assert_called_with("path/to/file.txt")
 
     def test_storage_listdir_subdir(self):
         # Files:
-        #   some/afolder/1.txt
+        #   some/dir/
         #   some/2.txt
         pages = [
             {
-                "name": "afolder",
+                "name": "dir",
                 "id": None,
                 "updated_at": None,
                 "created_at": None,
@@ -122,7 +123,7 @@ class SupabaseStorageTests(TestCase):
                 "metadata": None,
             },
             {
-                "name": "cajaconpollo3.txt",
+                "name": "2.txt",
                 "id": "756dae5b-0ba3-4d50-9ade-1ea24afdf479",
                 "updated_at": "2021-08-16T14:38:35.882189+00:00",
                 "created_at": "2021-08-16T14:38:35.882189+00:00",
@@ -154,9 +155,12 @@ class SupabaseStorageTests(TestCase):
         #   dir/
         pages = [
             {
-                "Contents": [
-                    {"Key": "dir/"},
-                ],
+                "name": "dir",
+                "id": None,
+                "updated_at": None,
+                "created_at": None,
+                "last_accessed_at": None,
+                "metadata": None,
             },
         ]
 

@@ -10,7 +10,7 @@ import posixpath
 # SUPABASE_ROOT_PATH = '/dir/'
 import threading
 
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
@@ -19,11 +19,27 @@ from supabase import create_client
 from django_storage_supabase.base import BaseStorage
 from django_storage_supabase.compress import CompressedFileMixin, CompressStorageMixin
 
-from .utils import clean_name, get_available_overwrite_name, safe_join, setting
+from .utils import (
+    check_location,
+    clean_name,
+    get_available_overwrite_name,
+    safe_join,
+    setting,
+)
 
 
 @deconstructible
 class SupabaseFile(CompressedFileMixin, File):
+    """The default file object used by the Supabase Storage.
+
+    Parameters
+    ----------
+    CompressedFileMixin : [type]
+        [description]
+    File : [type]
+        [description]
+    """
+
     def __init__(self):
         pass
 
@@ -47,6 +63,8 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         self._bucket = None
         self._connections = threading.local()
         self._client = None
+        self.location = ""
+        check_location(self)
 
     def _normalize_name(self, name):
         """
@@ -68,11 +86,17 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
     @property
     def client(self):
         if self._client is None:
-            settings = self.get_default_setting()
+            settings = self.get_default_settings()
+            supabase_url, supabase_access_token = settings.get(
+                "SUPABASE_URL"
+            ), settings.get("SUPABASE_ACCESS_TOKEN")
+            if bool(supabase_url) ^ bool(supabase_access_token):
+                raise ImproperlyConfigured(
+                    "Both SUPABASE_URL and SUPABASE_ACCESS_TOKEN must be "
+                    "provided together."
+                )
+            self._client = create_client(supabase_url, supabase_access_token).storage()
 
-            self._client = create_client(
-                settings["SUPABASE_URL"], settings["SUPABASE_ACCESS_TOKEN"]
-            )
         return self._client
 
     @property
@@ -82,7 +106,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         create it.
         """
         if self._bucket is None:
-            self.client.StorageFileAPI(self.bucket_name)
+            self._bucket = self.client.StorageFileAPI(self.bucket_name)
         return self._bucket
 
     def get_valid_name(self):
@@ -92,7 +116,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         # Return Access token and URL
         return {
             "SUPABASE_URL": setting("SUPABASE_URL"),
-            "SUPABSE_ACCESS_TOKEN": setting("SUPABASE_ACCESS_TOKEN"),
+            "SUPABASE_ACCESS_TOKEN": setting("SUPABASE_ACCESS_TOKEN"),
         }
 
     def listdir(self, name: str):
