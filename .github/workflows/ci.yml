@@ -33,27 +33,3 @@ jobs:
         env:
           TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
         run: tox
-
-  run_quality_tests:
-    name: Quality tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04]
-        python-version: ["3.7"]
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Dependencies
-        run: |
-          pip install tox
-      - name: Quality tests
-        env:
-          TOXENV: flake8
-        run: |
-          tox
