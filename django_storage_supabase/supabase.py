@@ -8,7 +8,9 @@ import posixpath
 # SUPABASE_ACCESS_TOKEN = 'YourOauthToken'
 # SUPABASE_URL = "https:<your-supabase-id>"
 # SUPABASE_ROOT_PATH = '/dir/'
-import threading
+from io import BytesIO
+from shutil import copyfileobj
+from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
@@ -40,28 +42,31 @@ class SupabaseFile(CompressedFileMixin, File):
         [description]
     """
 
-    def __init__(self, name):
+    def __init__(self, name, storage):
         self.name = name
+        self._file = None
+        self._storage = storage
 
-    @property
-    def size(self):
-        raise NotImplementedError("TODO")
+    def _get_file(self):
+        if self._file is None:
+            self._file = SpooledTemporaryFile()
+            response = self._storage_client.download(self.name)
+            # TODO: Modify Supabase-py to return response so we can check status == 200 before trying the op
+            with BytesIO(response) as file_content:
+                copyfileobj(file_content, self._file)
+            self._file.seek(0)
+        return self._file
 
-    def read(self, num_bytes=None):
-        raise NotImplementedError("TODO")
+    def _set_file(self, value):
+        self._file = value
 
-    def write(self, content):
-        raise NotImplementedError("TODO")
-
-    def close(self):
-        raise NotImplementedError("TODO")
+    file = property(_get_file, _set_file)
 
 
 @deconstructible
 class SupabaseStorage(CompressStorageMixin, BaseStorage):
     def __init__(self):
         self._bucket = None
-        self._connections = threading.local()
         self._client = None
         self.location = ""
         check_location(self)
@@ -77,11 +82,15 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         except ValueError:
             raise SuspiciousOperation("Attempted access to '%s' denied." % name)
 
-    def _open(self):
-        raise NotImplementedError("TODO")
+    def _open(self, name):
+        remote_file = SupabaseFile(self._clean_name(name), self)
+        return remote_file
 
     def _save(self, name, content):
-        raise NotImplementedError("TODO")
+        content.open()
+        self.client.upload(content.read(), self._clean_name(name))
+        content.close()
+        return name
 
     @property
     def client(self):
