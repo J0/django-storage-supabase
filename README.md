@@ -1,4 +1,4 @@
-# Django-Storage-Supabase(WIP: DO NOT USE)
+# Django-Storage-Supabase(Alpha)
 
 
 ## About
@@ -9,7 +9,7 @@ This project aims to provide a custom storage backend for Supabase Storage so th
 To do this we follow the [specification provided by Django](https://docs.djangoproject.com/en/4.0/howto/custom-file-storage/)
 
 Eventually, we hope that this can be integrated into the django-storages library
-and then write a blogpost/tutorial about it. We will write a description as well as tests shortly.
+and then write a blogpost/tutorial about it.
 
 
 

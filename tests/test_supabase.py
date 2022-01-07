@@ -1,5 +1,6 @@
 from unittest import mock
 
+from django.core.files.base import ContentFile
 from django.test import TestCase
 
 from django_storage_supabase import supabase
@@ -10,8 +11,9 @@ class SupabaseStorageTests(TestCase):
         self.storage = supabase.SupabaseStorage()
         self.storage._bucket = mock.MagicMock()
         self.storage._client = mock.MagicMock()
+
         self.storage.bucket_name = "test_bucket"
-        self.file_overwrite = False
+        self.storage.file_overwrite = True
 
     def test_clean_name(self):
         """
@@ -45,55 +47,31 @@ class SupabaseStorageTests(TestCase):
         """
         Test saving a file
         """
-        # TODO: Implement
-        # name = "test_storage_save.txt"
-        # content = ContentFile("new content")
-        # self.storage.save(name, content)
-        # self.storage.bucket.Object.assert_called_once_with(name)
-
-        # obj = self.storage.bucket.Object.return_value
-        # obj.upload_fileobj.assert_called_with(
-        #     content,
-        #     ExtraArgs={
-        #         "ContentType": "text/plain",
-        #     },
-        # )
+        # TODO: Add assertions
+        name = "test_storage_save.txt"
+        content = ContentFile("new content")
+        self.storage.save(name, content)
 
     def test_content_type(self):
         """
         Test saving a file with a None content type.
         """
-        # TODO: Implement
-        # name = "test_image.jpg"
-        # content = ContentFile("data")
-        # content.content_type = None
-        # self.storage.save(name, content)
-        # self.storage._bucket.list.assert_called_once_with(name)
-
-        # obj = self.storage._bucket.list.return_value
-        # obj.upload_fileobj.assert_called_with(
-        #     content,
-        #     ExtraArgs={
-        #         "ContentType": "image/jpeg",
-        #     },
-        # )
+        name = "test_image.jpg"
+        content = ContentFile("data")
+        content.content_type = None
+        self.storage.save(name, content)
+        content.open()
+        self.storage.client.upload.assert_called_once_with(content.read(), name)
+        content.close()
 
     def test_storage_save_gzipped(self):
         """
         Test saving a gzipped file
         """
-        # TODO: Implement
-        # name = "test_storage_save.gz"
-        # content = ContentFile("I am gzip'd")
-        # self.storage.save(name, content)
-        # obj = self.storage._bucket.upload.return_value
-        # obj.upload_fileobj.assert_called_with(
-        #     content,
-        #     ExtraArgs={
-        #         "ContentType": "application/octet-stream",
-        #         "ContentEncoding": "gzip",
-        #     },
-        # )
+        # TODO: Add assertions
+        name = "test_storage_save.gz"
+        content = ContentFile("I am gzip'd")
+        self.storage.save(name, content)
 
     def test_storage_exists(self):
         filename = "path/to/file.txt"
@@ -175,21 +153,29 @@ class SupabaseStorageTests(TestCase):
                 self._test_storage_mtime(use_tz)
 
     def _test_storage_mtime(self, use_tz):
-        # TODO: Implement
-        # obj = self.storage._bucket.return_value
-        # obj.last_modified = datetime.now(utc)
+        # TODO: Add assertions
+        pages = [
+            {
+                "name": "dir",
+                "id": None,
+                "updated_at": None,
+                "created_at": None,
+                "last_accessed_at": None,
+                "metadata": None,
+            },
+        ]
+        name = "file.txt"
+        # obj = self.storage._bucket.list.return_value
 
-        # name = "file.txt"
         # self.assertFalse(
-        #     is_aware(self.storage.modified_time(name)),
+        #     timezone.is_aware(self.storage.modified_time(name)),
         #     "Naive datetime object expected from modified_time()",
         # )
 
         # self.assertIs(
         #     settings.USE_TZ,
-        #     is_aware(self.storage.get_modified_time(name)),
+        #     timezone.is_aware(self.storage.get_modified_time(name)),
         #     "{} datetime object expected from get_modified_time() when USE_TZ={}".format(
         #         ("Naive", "Aware")[settings.USE_TZ], settings.USE_TZ
         #     ),
         # )
-        pass

@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-supabase = "^0.0.3"
+supabase = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 
