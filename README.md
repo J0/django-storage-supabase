@@ -18,9 +18,27 @@ and then write a blogpost/tutorial about it.
 
 1. `pip3 install django-storages-supabase	`
 
-2. Fill up settings accordingly
+2. In `settings.py` set the following variables 
+
+``` python
+DEFAULT_FILE_STORAGE = 'django_storage_supabase.supabase'
+SUPABASE_ACCESS_TOKEN = 'YourOauthToken'
+SUPABASE_URL = "https:<your-supabase-id>"
+SUPABASE_ROOT_PATH = '/dir/'
+```
+
+You can then use the following to upload to your backend.
+
+``` python
+photo = models.FileField(
+    upload_to='photos',
+)
+```
+
+Here's a [reference (WIP) example](https://github.com/supabase/supabase/pull/5688) of how to use Supabase storage as a backend together with the rest of the Supabase libraries.
 
 
 ## TODOs:
 - Implement save
 - Implement open and write
+- Test the package.
