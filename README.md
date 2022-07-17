@@ -22,7 +22,7 @@ and then write a blogpost/tutorial about it.
 
 ``` python
 DEFAULT_FILE_STORAGE = 'django_storage_supabase.supabase'
-SUPABASE_ACCESS_TOKEN = 'YourOauthToken'
+SUPABASE_API_KEY = ''
 SUPABASE_URL = "https:<your-supabase-id>"
 SUPABASE_ROOT_PATH = '/dir/'
 ```

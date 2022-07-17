@@ -96,15 +96,15 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
     def client(self):
         if self._client is None:
             settings = self.get_default_settings()
-            supabase_url, supabase_access_token = settings.get(
+            supabase_url, supabase_api_key = settings.get(
                 "SUPABASE_URL"
-            ), settings.get("SUPABASE_ACCESS_TOKEN")
-            if bool(supabase_url) ^ bool(supabase_access_token):
+            ), settings.get("SUPABASE_API_KEY")
+            if bool(supabase_url) ^ bool(supabase_api_key):
                 raise ImproperlyConfigured(
-                    "Both SUPABASE_URL and SUPABASE_ACCESS_TOKEN must be "
+                    "Both SUPABASE_URL and SUPABASE_API_KEY must be "
                     "provided together."
                 )
-            self._client = create_client(supabase_url, supabase_access_token).storage()
+            self._client = create_client(supabase_url, supabase_api_key).storage()
 
         return self._client
 
@@ -125,7 +125,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         # Return Access token and URL
         return {
             "SUPABASE_URL": setting("SUPABASE_URL"),
-            "SUPABASE_ACCESS_TOKEN": setting("SUPABASE_ACCESS_TOKEN"),
+            "SUPABASE_API_KEY": setting("SUPABASE_API_KEY"),
         }
 
     def listdir(self, name: str):
