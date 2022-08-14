@@ -65,7 +65,8 @@ class SupabaseFile(CompressedFileMixin, File):
 
 @deconstructible
 class SupabaseStorage(CompressStorageMixin, BaseStorage):
-    def __init__(self):
+    def __init__(self, **settings):
+        super().__init__(**settings)
         self._bucket = None
         self._client = None
         self.location = ""
@@ -88,7 +89,8 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
 
     def _save(self, name, content):
         content.open()
-        self.client.upload(content.read(), self._clean_name(name))
+        # TODO: Get content.read() to become a file
+        self.bucket.upload(self._clean_name(name), content.read())
         content.close()
         return name
 
@@ -97,8 +99,8 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         if self._client is None:
             settings = self.get_default_settings()
             supabase_url, supabase_api_key = settings.get(
-                "SUPABASE_URL"
-            ), settings.get("SUPABASE_API_KEY")
+                "supabase_url"
+            ), settings.get("supabase_api_key")
             if bool(supabase_url) ^ bool(supabase_api_key):
                 raise ImproperlyConfigured(
                     "Both SUPABASE_URL and SUPABASE_API_KEY must be "
@@ -115,17 +117,20 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
         create it.
         """
         if self._bucket is None:
-            self._bucket = self.client.StorageFileAPI(self.bucket_name)
+            self._bucket = self.client.from_(self.bucket_name)
         return self._bucket
 
-    def get_valid_name(self):
-        pass
+    def get_valid_name(self, name):
+        # TODO: Add valid name checks
+        return name
 
     def get_default_settings(self):
         # Return Access token and URL
         return {
-            "SUPABASE_URL": setting("SUPABASE_URL"),
-            "SUPABASE_API_KEY": setting("SUPABASE_API_KEY"),
+            "supabase_url": setting("SUPABASE_URL"),
+            "supabase_api_key": setting("SUPABASE_API_KEY"),
+            "file_overwrite": setting('SUPABASE_STORAGE_FILE_OVERWRITE', True),
+            'bucket_name': setting("SUPABASE_STORAGE_BUCKET_NAME")
         }
 
     def listdir(self, name: str):
@@ -156,7 +161,7 @@ class SupabaseStorage(CompressStorageMixin, BaseStorage):
 
     def exists(self, name: str):
         name = self._normalize_name(clean_name(name))
-        return bool(self._bucket.list(name))
+        return bool(self.bucket.list(name))
 
     def get_accessed_time(self, name: str):
         name = self._normalize_name(clean_name(name))
