@@ -16,7 +16,7 @@ and then write a blogpost/tutorial about it.
 
 ## Usage Instructions
 
-1. `pip3 install django-storages-supabase	`
+1. `pip3 install django-storage-supabase	`
 
 2. In `settings.py` set the following variables 
 
